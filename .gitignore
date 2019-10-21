@@ -1,0 +1,10 @@
+# builds
+test/**/*.js
+
+# development file
+.vscode
+package-lock.json
+*.map
+
+# Dependency directories
+node_modules/
