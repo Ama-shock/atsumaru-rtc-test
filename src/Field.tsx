@@ -1,21 +1,20 @@
 import React, {Component, CSSProperties, MouseEvent, TouchEvent} from 'react';
 import Victor from 'victor';
-
 import { Circle } from './Objects';
 
-export type Positions = {
+export type CirclesProps = {
+    self : Circle;
+    dist : Circle;
+    pack : Circle;
+};
+
+export type FieldProps = {
+    size : {width: number, height: number};
     point : Victor;
-    self : Victor;
-    dist : Victor;
-    pack : Victor;
-};
+    circles: CirclesProps;
+}
 
-export type FieldStatus = {
-    size : [number, number];
-    position : [number, number];
-};
-
-export default class Field extends Component<Positions & FieldStatus>{
+export default class Field extends Component<FieldProps>{
 
     readonly movePoint = (ev: MouseEvent|TouchEvent)=>{
         const element = ev.target as HTMLDivElement;
@@ -28,19 +27,34 @@ export default class Field extends Component<Positions & FieldStatus>{
     render(){
         const divStyle: CSSProperties = {
             backgroundColor: 'blue',
-            position: 'absolute',
-            width: this.props.size[0] + 'px',
-            height: this.props.size[1] + 'px',
-            left: this.props.position[0] + 'px',
-            top: this.props.position[1] + 'px'
+            position: 'relative',
+            width: this.props.size.width + 'px',
+            height: this.props.size.height + 'px'
         };
 
         return (
             <div style={divStyle} onMouseMove={this.movePoint} onTouchMove={this.movePoint}>
-                <Circle color='aquamarine' diameter={60} position={this.props.self} />
-                <Circle color='rosybrown' diameter={60} position={this.props.dist} />
-                <Circle color='yellow' diameter={30} position={this.props.pack} />
+                {this.renderCircle(this.props.circles.self, 'aquamarine')}
+                {this.renderCircle(this.props.circles.dist, 'rosybrown')}
+                {this.renderCircle(this.props.circles.pack, 'yellow')}
             </div>
+        );
+    }
+
+    private renderCircle(obj : Circle, color: string){
+        return (
+            <span style={{
+                position: "absolute",
+                overflow: 'hidden',
+                pointerEvents: 'none',
+                transform: 'translate(-50%, -50%)',
+                borderRadius: '50%',
+                backgroundColor: color,
+                left: Math.round(obj.x) + 'px',
+                top: Math.round(obj.y) + 'px',
+                width: obj.diameter + 'px',
+                height: obj.diameter + 'px', 
+            }}></span>
         );
     }
 }
