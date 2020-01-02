@@ -1,4 +1,15 @@
 import Victor from 'victor';
+import { Collision } from './Collision';
+
+type Position = {
+    x: number,
+    y: number
+};
+
+export type Area = {
+    min: Position,
+    max: Position
+};
 
 export class Circle extends Victor{
     speed: Victor = new Victor(0, 0);
@@ -30,36 +41,72 @@ export class Circle extends Victor{
         const diff = (time - this.time) || 1;
         this.speed = pos.clone().subtract(this).divideScalar(diff / 1000);
     }
-    
+
+    intoField(area: Area){
+        const r = this.diameter / 2;
+        if(this.x < area.min.x + r) this.x = area.min.x + r;
+        if(this.y < area.min.y + r) this.y = area.min.y + r;
+        if(this.x > area.max.x - r) this.x = area.max.x - r;
+        if(this.y > area.max.y - r) this.y = area.max.y - r;
+    }
 }
 
-export class Collision extends Victor{
-    private constructor(readonly time: number, direction: Victor){
-        super(direction.x, direction.y);
+
+export class Pack extends Circle{
+
+    constructor(readonly movableArea: Area){
+        super(30);
     }
 
-    static circleToCircle(a: Circle, b: Circle, time: number = Date.now()){
-        const vA = a.clone();
-        const vB = b.clone();
-        const startTime = a.time > b.time ? a.time : b.time;
-        if(vA.time < startTime) vA.move(startTime);
-        if(vB.time < startTime) vB.move(startTime);
+    clone(){
+        const pack = new Pack(this.movableArea);
+        pack.x = this.x;
+        pack.y = this.y;
+        pack.time = this.time;
+        pack.speed = this.speed.clone();
+        return pack;
+    }
 
-        const r = (vA.diameter + vB.diameter) / 2;
-        const vC = new Victor(vB.x, vB.y).subtract(vA);
-        if(vC.lengthSq() < r * r) return new Collision(startTime, vC.normalize());
-        const vD = vB.movedAt(time).subtract(vA.movedAt(time));
-        const sP = vD.lengthSq();
-        const sQ = vC.dot(vD);
-        const sR = vC.lengthSq();
+    moveWith(t: number, striker: Circle){
+        while(this.time < t){
+            const collisionSelf = Collision.circleToCircle(this, striker, t);
+            const collisionWall = Collision.circleToWall(this, this.movableArea, t);
+            const collisionSelfAt = collisionSelf ? collisionSelf.time : Infinity;
+            const collisionWallAt = collisionWall ? collisionWall.time : Infinity;
+            const collision = collisionSelfAt < collisionWallAt ? collisionSelf : collisionWall;
+            if(!collision) break;
+            this.move(Math.max(collision.time, this.time + 1));
+            
+            const boundForce = collision.clone().multiplyScalar(collision.dot(this.speed) * -1.5);
+            this.speed.add(boundForce);
 
-        const inRoot = sQ * sQ - sP * (sR - r * r);
-        if(!inRoot || inRoot < 0) return null;
-        const t = (Math.sqrt(inRoot) - sQ) / sP;
-        if(t < 0 || 1 < t) return null;
-        const collosionTime = startTime + (time - startTime) * t;
+            if(collisionSelfAt < collisionWallAt){
+                const additionalForce = collision.clone().multiplyScalar(collision.dot(striker.speed));
+                this.speed.add(additionalForce);
+            }
+
+            this.intoField(this.movableArea);
+
+            const overlay = Collision.getOverlay(this, striker);
+            if(overlay){
+                this.speed.subtract(overlay);
+                this.add(overlay);
+            }
+
+            console.log(collisionSelfAt < collisionWallAt ? 'strike' : 'wall', collision, this, striker);
+        }
+        this.move(t);
+
+        this.intoField(this.movableArea);
+    }
+    
+    intoField(area: Area){
+        const r = this.diameter / 2;
+        if(this.x < area.min.x + r) this.x = area.min.x + r;
+        if(this.x > area.max.x - r) this.x = area.max.x - r;
         
-        const direction = vB.move(collosionTime).subtract(vA.move(collosionTime)).normalize();
-        return new Collision(collosionTime, direction);
+        // only in develop
+        if(this.y < this.movableArea.min.y && this.speed.y < 0) this.speed.y *= -1;
+        if(this.y > this.movableArea.max.y && this.speed.y > 0) this.speed.y *= -1;
     }
 }
