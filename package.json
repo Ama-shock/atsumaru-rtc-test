@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "types": "./**/*.d.ts",
   "scripts": {
-    "start": "webpack-dev-server --open -d",
+    "start": "webpack-dev-server -d",
     "build": "webpack -p"
   },
   "repository": {

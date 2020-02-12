@@ -52,10 +52,11 @@ export class Circle extends Victor{
 }
 
 
+const PackDiameter = 60;
 export class Pack extends Circle{
 
     constructor(readonly movableArea: Area){
-        super(30);
+        super(PackDiameter);
     }
 
     clone(){
@@ -88,12 +89,9 @@ export class Pack extends Circle{
             this.intoField(this.movableArea);
 
             const overlay = Collision.getOverlay(this, striker);
-            if(overlay){
-                this.speed.subtract(overlay);
-                this.add(overlay);
-            }
+            if(overlay) this.add(overlay);
 
-            console.log(collisionSelfAt < collisionWallAt ? 'strike' : 'wall', collision, this, striker);
+            // console.log(collisionSelfAt < collisionWallAt ? 'strike' : 'wall', collision, this, striker);
         }
         this.move(t);
 

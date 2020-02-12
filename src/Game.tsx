@@ -2,17 +2,31 @@ import React, {Component, CSSProperties} from 'react';
 import Victor from 'victor';
 import Field from './Field';
 import { Area, Circle, Pack } from './Objects';
-import { Collision } from './Collision';
+import LocalProxy from './LocalProxy';
+import DataChannel from './WebRTC';
+(async()=>{
+    try{
+        const proxy = new LocalProxy<string>();
+        Object.defineProperty(self, 'proxy', {value: proxy});
+        const channel = await proxy.matching();
+        Object.defineProperty(self, 'channel', {value: channel});
+        console.log('matched');
+    }catch(err){
+        console.error(err);
+    }
+})();
+
+const StrikerDiameter = 120;
 
 export default class Game extends Component<{}>{
     fieldArea: Area = {
         min: {x: 0, y: 0},
-        max: {x: 240, y: 480}
+        max: {x: 480, y: 960}
     };
     point = new Victor(0, 0);
     state = {
-        self: new Circle(60),
-        dist: new Circle(60),
+        self: new Circle(StrikerDiameter),
+        dist: new Circle(StrikerDiameter),
         pack: new Pack(this.fieldArea)
     };
     packSpeed: Victor = new Victor(0, 0);
@@ -32,7 +46,7 @@ export default class Game extends Component<{}>{
     }
 
     private async setNextPos(time: number){
-        const v = new Circle(60);
+        const v = new Circle(this.state.self.diameter);
         v.x = this.point.x;
         v.y = this.point.y;
         v.intoField({
@@ -88,6 +102,4 @@ export default class Game extends Component<{}>{
             </div>
         );
     }
-
-
 }

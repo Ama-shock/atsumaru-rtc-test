@@ -1,27 +1,18 @@
 import rpg from 'rpgatsumaru-wrapper';
-import {WebRTCServer, WebRTCClient, MessageController, MessageControllerConstructor} from 'typed-messaging';
+import DataChannel from './WebRTC';
 
-type Position = {
-    type: 'pack'|'self'
-    position: [number, number],
-    timestamp: number
+type SnapShot = {
+    id: number;
+    timestamp: number;
+    pack?: { x: number, y: number, dx: number, dy: number };
+    striker: { x: number, y: number };
 };
 
-interface SyncPositionSchema{
-    sync: (pos: Position[])=>Position[];
+interface SyncSchema{
+    data: SnapShot[];
+    latest: number;
+    omission: number[];
 }
-
-class SyncPositionController implements MessageController<SyncPositionSchema>{
-    constructor(private connect: Connection){}
-    async sync(pos: Position[]) {
-        this.connect.listener && this.connect.listener(pos);
-        return this.connect.consume();
-    }
-}
-
-type SharedSaves = {
-    offer: RTCSessionDescription;
-};
 
 class Connection {
     readonly ready = this.init();
@@ -30,22 +21,16 @@ class Connection {
         
     }
 
-    private positionStack: Position[] = [];
-    stack(pos: Position){
-        this.positionStack.push(pos);
-    }
-    consume(){
-        const stack = this.positionStack;
-        this.positionStack = [];
-        return stack;
-    }
-    listener?: (pos: Position[])=>void;
-
-    server?: WebRTCServer<SyncPositionSchema, this>;
-    startServer(){
-
-        this.server = new WebRTCServer<SyncPositionSchema, this>(SyncPositionController, this);
-    }
+    readonly localStack: SyncSchema = {
+        data: [],
+        latest: 0,
+        omission: []
+    };
+    readonly remoteStack: SyncSchema = {
+        data: [],
+        latest: 0,
+        omission: []
+    };
 
     private isStandby = false;
     async standby(){
@@ -60,11 +45,6 @@ class Connection {
             await new Promise(r=>setTimeout(r, 5000));
             const receiveds = await rpg.signal.getPrivate();
             const ids = receiveds.filter(r=>r.createdAt > startAt).map(r=>r.senderId);
-            const saves = await rpg.storage.getOthersShared<SharedSaves>(ids);
-            Object.values(saves).map(async share=>{
-                const answer = await this.server!.offer(share.offer);
-                
-            });
 
         }
     }

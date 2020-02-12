@@ -30,5 +30,9 @@ module.exports = {
     },
     plugins: [
       new HtmlWebpackPlugin({title: null})
-    ]
+    ],
+    devServer: {
+        host: '0.0.0.0',
+        disableHostCheck: true
+    }
 };

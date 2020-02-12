@@ -56,10 +56,11 @@ export class Collision extends Victor{
         const r = (a.diameter + b.diameter) / 2;
         const distance = a.distance(b);
         if(distance >= r) return null;
-
-        return new Victor(
-            (a.x - b.x) * (r - distance + 1) / distance,
-            (a.y - b.y) * (r - distance + 1) / distance,
+        const rate = (r - distance) / distance;
+        const vec = new Victor(
+            (a.x - b.x) * rate,
+            (a.y - b.y) * rate,
         );
+        return vec.add(vec.normalize().multiplyScalar(r / 5));
     }
 }
